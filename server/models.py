@@ -9,23 +9,6 @@ from typing import Generic, TypeVar, Type, Tuple, Collection, Optional, Iterable
 T = TypeVar('T', bound=PydanticBaseModel)
 
 
-class UserBaseModel(PydanticBaseModel):
-    name: str
-    user_name: str
-
-
-class PollBaseModel(PydanticBaseModel):
-    title: str
-    sp_0: int = 0
-    sp_0_5: int = 0
-    sp_1: int = 0
-    sp_2: int = 0
-    sp_3: int = 0
-    sp_5: int = 0
-    sp_8: int = 0
-    sp_13: int = 0
-
-
 class DBModel(Generic[T]):
     pydantic_model: Type[T]
     entity_kind: str
@@ -124,24 +107,47 @@ class DBModel(Generic[T]):
         cls.client.delete(entity.key)
 
 
-class UserCreateModel(UserBaseModel):
-    pass
+class UserBaseModel(PydanticBaseModel):
+    user_name: str
 
 
 class UserModel(UserBaseModel):
     id: str
 
 
-class PollCreateModel(PollBaseModel):
-    pass
+class VoteOptions(str, Enum):
+    sp_0 = "sp_0"
+    sp_0_5 = "sp_0_5"
+    sp_1 = "sp_1"
+    sp_2 = "sp_2"
+    sp_3 = "sp_3"
+    sp_5 = "sp_5"
+    sp_8 = "sp_8"
+    sp_13 = "sp_13"
 
 
-class PollModel(PollBaseModel):
+class VoteBaseModel(PydanticBaseModel):
+    user: UserModel
+    type: VoteOptions
+
+
+class PollCreateModel(PydanticBaseModel):
+    title: str
+    created_by: str
+
+
+class PollModel(PydanticBaseModel):
     id: str
+    title: str
+    created_by: UserModel
+    votes: List[VoteBaseModel] = []
 
 
-class PollModel(PollBaseModel):
-    id: str
+class MessageModel(PydanticBaseModel):
+    route: str
+    user_name: str
+    poll_id: str
+    type: Optional[str]
 
 
 class DBUserModel(DBModel[UserModel]):
@@ -149,8 +155,21 @@ class DBUserModel(DBModel[UserModel]):
     entity_kind = "user"
     id_field = "id"
 
+    @classmethod
+    def get_by_user_name(cls, user_name: str):
+        return next(cls.get_all(
+            (
+                ("user_name", "=", user_name),
+            )
+        ), None)
+
 
 class DBPollModel(DBModel[PollModel]):
     pydantic_model = PollModel
     entity_kind = "poll"
     id_field = "id"
+
+    def add_new_vote(self, vote: VoteBaseModel):
+        self.votes.append(vote)
+        cls.write_fields(self, (votes,))
+        return self

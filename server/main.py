@@ -1,11 +1,35 @@
-from typing import Optional, List, Iterable
+import json
+from typing import Optional, List, Iterable, Dict
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from uuid import uuid4
 
 import models
+from processer import process_message
 
 app = FastAPI()
+
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+
+manager = ConnectionManager()
 
 
 @app.get("/api")
@@ -14,7 +38,7 @@ def read_root():
 
 
 @app.post("/api/auth/anonymous/login")
-def create_anonymous_user(anonymous_user_config: models.UserCreateModel) -> models.UserModel:
+def create_anonymous_user(anonymous_user_config: models.UserBaseModel) -> models.UserModel:
     new_anonymous_user = models.UserModel(
         id=uuid4().hex,
         **anonymous_user_config.dict()
@@ -31,16 +55,18 @@ def list_users() -> Iterable[models.UserModel]:
     return models.DBUserModel.get_all()
 
 
-@app.delete("/api/user")
-def delete_user(id: str):
-    return models.DBUserModel.delete(id)
+@app.delete("/api/user/{user_id}")
+def delete_user(user_id: str):
+    return models.DBUserModel.delete(user_id)
 
 
 @app.post("/api/poll")
 def create_poll(poll_config: models.PollCreateModel) -> models.PollModel:
+    created_user = models.DBUserModel.get_by_user_name(poll_config.created_by)
     new_poll = models.PollModel(
         id=uuid4().hex,
-        **poll_config.dict()
+        title=poll_config.title,
+        created_by=created_user,
     )
 
     models.DBPollModel.get_or_create(
@@ -54,11 +80,27 @@ def list_polls() -> Iterable[models.PollModel]:
     return models.DBPollModel.get_all()
 
 
-@app.get("/api/poll")
-def get_poll() -> models.PollModel:
-    return models.DBPollModel.get('12e67ae3e07d4f6281f670cb17d8de57')
+@app.get("/api/poll/{poll_id}")
+def get_poll(poll_id: str) -> models.PollModel:
+    return models.DBPollModel.get(poll_id)
 
 
-@app.delete("/api/poll")
-def delete_poll(id: str):
-    return models.DBPollModel.delete(id)
+@app.delete("/api/poll/{poll_id}")
+def delete_poll(poll_id: str):
+    return models.DBPollModel.delete(poll_id)
+
+
+@app.websocket("/ws")
+async def ws_poll(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            data_dict = json.loads(data)
+            payload = json.dumps(process_message(data_dict))
+
+            # payload = json.dumps(models.DBPollModel.get(poll_id).dict())
+            # await websocket.send_text(data)
+            await manager.broadcast(payload)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
