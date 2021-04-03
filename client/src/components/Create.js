@@ -19,11 +19,7 @@ const Create = ({ history }) => {
   const [open, setOpen] = useState(false);
 
   // TODO: error handling
-  const {
-    mutateAsync: handleCreatePoll,
-    isError: isCreateError,
-    error: createError,
-  } = useCreatePoll();
+  const { mutateAsync: handleCreatePoll } = useCreatePoll();
 
   const reset = () => {
     setOpen(false);

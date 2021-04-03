@@ -1,7 +1,7 @@
 import json
 from typing import Optional, List, Iterable, Dict
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from uuid import uuid4
 
 import models
@@ -30,11 +30,6 @@ class ConnectionManager:
 
 
 manager = ConnectionManager()
-
-
-@app.get("/api")
-def read_root():
-    return {"Hello": "World"}
 
 
 @app.post("/api/auth/anonymous/login")
@@ -82,7 +77,10 @@ def list_polls() -> Iterable[models.PollModel]:
 
 @app.get("/api/poll/{poll_id}")
 def get_poll(poll_id: str) -> models.PollModel:
-    return models.DBPollModel.get(poll_id)
+    poll = models.DBPollModel.get(poll_id)
+    if not poll:
+        raise HTTPException(status_code=404, detail="Story not found")
+    return poll
 
 
 @app.delete("/api/poll/{poll_id}")
@@ -98,9 +96,6 @@ async def ws_poll(websocket: WebSocket):
             data = await websocket.receive_text()
             data_dict = json.loads(data)
             payload = json.dumps(process_message(data_dict))
-
-            # payload = json.dumps(models.DBPollModel.get(poll_id).dict())
-            # await websocket.send_text(data)
             await manager.broadcast(payload)
     except WebSocketDisconnect:
         manager.disconnect(websocket)

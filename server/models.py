@@ -4,7 +4,7 @@ from enum import Enum
 from google.cloud.datastore import Entity
 from google.cloud import datastore
 from pydantic import BaseModel as PydanticBaseModel, Field
-from typing import Generic, TypeVar, Type, Tuple, Collection, Optional, Iterable, Any, List
+from typing import Generic, TypeVar, Type, Tuple, Collection, Optional, Iterable, Any, List, Set
 
 T = TypeVar('T', bound=PydanticBaseModel)
 
@@ -143,6 +143,11 @@ class PollModel(PydanticBaseModel):
     votes: List[VoteBaseModel] = []
 
 
+class MessageRoutes(str, Enum):
+    vote = "poll/vote"
+    withdraw = "poll/withdraw"
+
+
 class MessageModel(PydanticBaseModel):
     route: str
     user_name: str
@@ -168,8 +173,3 @@ class DBPollModel(DBModel[PollModel]):
     pydantic_model = PollModel
     entity_kind = "poll"
     id_field = "id"
-
-    def add_new_vote(self, vote: VoteBaseModel):
-        self.votes.append(vote)
-        cls.write_fields(self, (votes,))
-        return self

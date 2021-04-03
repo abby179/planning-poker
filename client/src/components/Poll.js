@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from "react";
 import styled from "styled-components";
-import useWebSocket, { ReadyState } from "react-use-websocket";
+import useWebSocket from "react-use-websocket";
 import { CircularProgress } from "@material-ui/core";
 import Typography from "@material-ui/core/Typography";
 import Chip from "@material-ui/core/Chip";
@@ -24,37 +24,26 @@ const POINT_MAP = {
 const Poll = ({ match }) => {
   const me = get("__planning_poker_user");
   const pollId = match.params.pollId;
-  const { data, isLoading } = useQueryPoll(pollId);
+  const { data, isLoading, error } = useQueryPoll(pollId);
 
   const socketUrl = `ws://localhost:8000/ws`;
-  const {
-    sendMessage,
-    sendJsonMessage,
-    lastJsonMessage,
-    readyState,
-    getWebSocket,
-  } = useWebSocket(socketUrl);
-
-  const connectionStatus = {
-    [ReadyState.CONNECTING]: "Connecting",
-    [ReadyState.OPEN]: "Open",
-    [ReadyState.CLOSING]: "Closing",
-    [ReadyState.CLOSED]: "Closed",
-    [ReadyState.UNINSTANTIATED]: "Uninstantiated",
-  }[readyState];
-
-  console.log(connectionStatus);
+  const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(
+    socketUrl
+  );
 
   const poll = useMemo(() => lastJsonMessage || data, [data, lastJsonMessage]);
 
-  const handleVote = useCallback((key) => {
-    sendJsonMessage({
-      route: "poll/vote",
-      user_name: me,
-      poll_id: pollId,
-      type: key,
-    });
-  }, []);
+  const handleVote = useCallback(
+    (key) => {
+      sendJsonMessage({
+        route: "poll/vote",
+        user_name: me,
+        poll_id: pollId,
+        type: key,
+      });
+    },
+    [me, pollId, sendJsonMessage]
+  );
 
   const handleWithdraw = useCallback(() => {
     sendJsonMessage({
@@ -62,12 +51,31 @@ const Poll = ({ match }) => {
       user_name: me,
       poll_id: pollId,
     });
-  }, []);
+  }, [me, pollId, sendJsonMessage]);
 
   const currentVote = useMemo(
     () => poll && poll.votes.find((vote) => vote.user.user_name === me),
     [me, poll]
   );
+
+  if (error) {
+    return (
+      <Container>
+        <Typography variant="h6">Requested page was not found.</Typography>
+      </Container>
+    );
+  }
+
+  // ws closed
+  if (readyState === 3) {
+    return (
+      <Container>
+        <Typography variant="h6">
+          Connection lost, refresh the page to reconnect
+        </Typography>
+      </Container>
+    );
+  }
 
   return (
     <Container>

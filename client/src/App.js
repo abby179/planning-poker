@@ -23,6 +23,7 @@ function App() {
               <Redirect exact from="/" to="/create" />
               <Route exact path="/create" component={Create} />
               <Route exact path="/poll/:pollId" component={Poll} />
+              <Route render={() => <div>Page doesn't exist</div>} />
             </Switch>
           ) : (
             <Login />

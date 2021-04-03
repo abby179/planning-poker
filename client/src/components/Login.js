@@ -11,11 +11,7 @@ const Login = () => {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   // TODO: error handling
-  const {
-    mutate: handleLoginUser,
-    isError: isLoginError,
-    error: loginError,
-  } = useLoginUser();
+  const { mutate: handleLoginUser } = useLoginUser();
 
   const handleChange = (event) => {
     setError("");

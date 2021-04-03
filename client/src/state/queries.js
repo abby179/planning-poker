@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "react-query";
+import { useQuery, useMutation } from "react-query";
 
 import { set } from "../common/localStorage";
 import { loginUser, createPoll, getPoll } from "./api";

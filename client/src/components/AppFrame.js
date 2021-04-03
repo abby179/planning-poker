@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import styled from "styled-components";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
@@ -13,7 +14,9 @@ const AppFrame = ({ children }) => {
     <MainContent>
       <AppBar position="static">
         <StyledToolbar>
-          <Typography variant="h6">Planning Poker</Typography>
+          <StyledLink to="/">
+            <Typography variant="h6">Planning Poker</Typography>
+          </StyledLink>
           {displayUser && (
             <Typography variant="subtitle1">Hello, {displayUser}</Typography>
           )}
@@ -35,6 +38,11 @@ const MainContent = styled.main`
 
 const StyledToolbar = styled(Toolbar)`
   justify-content: space-between;
+`;
+
+const StyledLink = styled(Link)`
+  text-decoration: none;
+  color: white;
 `;
 
 export default AppFrame;
