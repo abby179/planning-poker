@@ -9,27 +9,34 @@ import DialogActions from "@material-ui/core/DialogActions";
 import Dialog from "@material-ui/core/Dialog";
 
 import { useCreatePoll } from "../state/queries";
+import { get } from "../common/localStorage";
 
-const Create = () => {
+const Create = ({ history }) => {
+  const me = get("__planning_poker_user");
+
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
 
   // TODO: error handling
   const {
-    mutate: handleCreatePoll,
+    mutateAsync: handleCreatePoll,
     isError: isCreateError,
     error: createError,
   } = useCreatePoll();
+
+  const reset = () => {
+    setOpen(false);
+    setError("");
+    setTitle("");
+  };
 
   const handleClickOpen = () => {
     setOpen(true);
   };
 
   const handleClose = (value) => {
-    setOpen(false);
-    setError("");
-    setTitle("");
+    reset();
   };
 
   const handleChange = (event) => {
@@ -37,11 +44,12 @@ const Create = () => {
     setTitle(event.target.value);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (title) {
-      handleCreatePoll(title);
-      setOpen(false);
+      const newPoll = await handleCreatePoll({ title, me });
+      reset();
+      history.push(`/poll/${newPoll.id}`);
     } else {
       setError("This field cannot be empty.");
     }

@@ -30,6 +30,7 @@ const MainContent = styled.main`
   flex-direction: column;
   overflow: auto;
   flex-grow: 1;
+  align-items: center;
 `;
 
 const StyledToolbar = styled(Toolbar)`

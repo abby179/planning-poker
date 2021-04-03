@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import AppFrame from "./components/AppFrame";
 import Login from "./components/Login";
 import Create from "./components/Create";
+import Poll from "./components/Poll";
 import { get } from "./common/localStorage";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ function App() {
             <Switch>
               <Redirect exact from="/" to="/create" />
               <Route exact path="/create" component={Create} />
+              <Route exact path="/poll/:pollId" component={Poll} />
             </Switch>
           ) : (
             <Login />

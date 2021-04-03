@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "react-query";
 
 import { set } from "../common/localStorage";
-import { loginUser, createPoll } from "./api";
+import { loginUser, createPoll, getPoll } from "./api";
 
 export const useLoginUser = () => {
   return useMutation(
@@ -16,5 +16,13 @@ export const useLoginUser = () => {
 };
 
 export const useCreatePoll = () => {
-  return useMutation((title) => createPoll({ title: title }));
+  return useMutation(({ title, me }) =>
+    createPoll({ title: title, created_by: me })
+  );
+};
+
+export const useQueryPoll = (id) => {
+  return useQuery(["poll", id], () => getPoll(id), {
+    refetchOnWindowFocus: false,
+  });
 };
